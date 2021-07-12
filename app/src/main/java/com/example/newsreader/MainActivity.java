@@ -26,25 +26,25 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends AppCompatActivity {
 
-    ArrayList<String> titles = new ArrayList<>();
-    ArrayList<String> urlList = new ArrayList<>();
+    ArrayList<String> titles = new ArrayList<>(); //ArrayList for news articles for MainActivity ListView
+    ArrayList<String> urlList = new ArrayList<>(); // ArrayList for storing urls for each articles present in titles ArrayList
     ArrayAdapter arrayAdapter;
-    SQLiteDatabase articlesDB;
+    SQLiteDatabase articlesDB;      //Database declaration
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Creating Database and Adding first table articles1
         articlesDB = this.openOrCreateDatabase("Articles", MODE_PRIVATE,null);
         articlesDB.execSQL("CREATE TABLE IF NOT EXISTS articles1 " +
                 "(id INTEGER PRIMARY KEY, articleId INTEGER, title VARCHAR, url VARCHAR)");
 
-
-
+        //Downloading news from the Hacker news API URL
         DownloadTask task = new DownloadTask();
         try{
-//            task.execute("https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty");
+            task.execute("https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty");
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
         arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, titles);
         listView.setAdapter(arrayAdapter);
 
+        //Calling New Activity when list item clicked
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -61,13 +62,17 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
+        //Calling to update List View to update in MainActivity
         updateListView();
 
     }
 
     public void updateListView(){
+        //Cursor to travel through the saved database
         Cursor c = articlesDB.rawQuery("SELECT * FROM articles1", null);
 
+        //Getting index from cursor
         int urlIndex = c.getColumnIndex("url");
         int titleIndex = c.getColumnIndex("title");
         if(c.moveToFirst()){
@@ -82,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //Downloading News using Async Task will change it to Something else in Future
     public class DownloadTask extends AsyncTask<String, Void, String>{
 
         @Override
@@ -90,6 +96,8 @@ public class MainActivity extends AppCompatActivity {
             URL url;
             HttpsURLConnection urlConnection;
             try{
+
+                //Downloading News ID from first Call
                 url = new URL(urls[0]);
                 urlConnection = (HttpsURLConnection) url.openConnection();
                 InputStream inputStream = urlConnection.getInputStream();
@@ -109,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
 
                 articlesDB.execSQL("DELETE FROM articles1");
 
+                //Downloading News Titles and Urls from Second Call to API
                 for(int i = 0; i < numberOfItems; i++){
                     String articleId = jsonArray.getString(i);
                     url = new URL("https://hacker-news.firebaseio.com/v0/item/"+articleId+".json?print=pretty");
@@ -125,23 +134,10 @@ public class MainActivity extends AppCompatActivity {
 //                    Log.i("ArticleInfo : ",articleInfo);
                     JSONObject jsonObject = new JSONObject(articleInfo);
 
+                    //Parsing using JSON Object and saving it to database
                     if(!jsonObject.isNull("title") && !jsonObject.isNull("url")){
                         String articleTitle = jsonObject.getString("title");
                         String articleUrl = jsonObject.getString("url");
-//                        Log.i("Title & URL" , articleTitle + " " + articleUrl);
-//                        url = new URL(articleUrl);
-//                        urlConnection = (HttpsURLConnection) url.openConnection();
-//                        inputStream = urlConnection.getInputStream();
-//                        inputStreamReader = new InputStreamReader(inputStream);
-//                        data = inputStreamReader.read();
-//                        String articleContent = "";
-//                        while (data != -1){
-//                            char current = (char) data;
-//                            articleContent += current;
-//                            data = inputStreamReader.read();
-//                        }
-//
-//                        Log.i("HTML : ", articleContent);
 
                         String sql = "INSERT INTO articles1 (articleId, title, url)" +
                                 " VALUES (?, ?, ?)";
@@ -149,12 +145,8 @@ public class MainActivity extends AppCompatActivity {
                         statement.bindString(1, articleId);
                         statement.bindString(2, articleTitle);
                         statement.bindString(3, articleUrl);
-
                         statement.execute();
-
                     }
-
-
                 }
                 return result;
             }catch (Exception e){

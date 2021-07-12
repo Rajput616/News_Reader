@@ -18,10 +18,12 @@ public class ArticleActivity extends AppCompatActivity {
 
         webView.getSettings().setJavaScriptEnabled(true);
 
+        //For accessing our own browser in the app
         webView.setWebViewClient(new WebViewClient());
 
         Intent intent = getIntent();
 
+        //For loading URL in the WebView
         webView.loadUrl(intent.getStringExtra("url"));
 
 
